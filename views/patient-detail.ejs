@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Detail - PN-App System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            margin-bottom: 20px;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #667eea;
+        }
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 14px;
+            top: 15px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background: #dee2e6;
+        }
+        .timeline-item:last-child::after {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar p-0">
+                <div class="position-sticky pt-3">
+                    <div class="text-center text-white mb-4">
+                        <i class="bi bi-hospital" style="font-size: 2.5rem;"></i>
+                        <h5 class="mt-2">RehabPlus</h5>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/patients">
+                                <i class="bi bi-people me-2"></i>Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/patient/register">
+                                <i class="bi bi-person-plus me-2"></i>Register Patient
+                            </a>
+                        </li>
+                        <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/appointments">
+                                <i class="bi bi-calendar-check me-2"></i>Appointments
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (user.role === 'ADMIN') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/clinics">
+                                <i class="bi bi-building me-2"></i>Clinics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-person-gear me-2"></i>Users
+                            </a>
+                        </li>
+                        <% } %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/profile">
+                                <i class="bi bi-person-circle me-2"></i>Profile
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-left me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Patient Detail</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-primary me-2" onclick="showCreatePNModal()">
+                            <i class="bi bi-plus-circle me-1"></i>Create PN Case
+                        </button>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="window.close()">
+                            <i class="bi bi-x-circle me-1"></i>Close
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Patient Information -->
+                <div class="info-card" id="patientInfo">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h4><i class="bi bi-person-badge me-2"></i>Patient Information</h4>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editPatient()">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="info-label">HN</div>
+                            <div id="hn">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-label">PT Number</div>
+                            <div id="ptNumber">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-label">Name</div>
+                            <div id="fullName">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-label">Date of Birth</div>
+                            <div id="dob">-</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="info-label">Gender</div>
+                            <div id="gender">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-label">Phone</div>
+                            <div id="phone">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-label">Email</div>
+                            <div id="email">-</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-label">Clinic</div>
+                            <div id="clinic">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Information -->
+                <div class="info-card">
+                    <h4><i class="bi bi-heart-pulse me-2"></i>Medical Information</h4>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="info-label">Primary Diagnosis</div>
+                            <div id="diagnosis">-</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="info-label">Rehabilitation Goals</div>
+                            <div id="rehabGoals">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-label">Body Area</div>
+                            <div id="bodyArea">-</div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="info-label">Precautions</div>
+                            <div id="precautions">-</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-label">Contraindications</div>
+                            <div id="contraindications">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PN Cases Tab -->
+                <ul class="nav nav-tabs" id="patientTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="cases-tab" data-bs-toggle="tab" data-bs-target="#cases" type="button">
+                            <i class="bi bi-folder2-open me-1"></i>PN Cases
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button">
+                            <i class="bi bi-clock-history me-1"></i>Timeline
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content mt-3" id="patientTabContent">
+                    <!-- PN Cases Tab -->
+                    <div class="tab-pane fade show active" id="cases" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>PN Code</th>
+                                        <th>Purpose</th>
+                                        <th>Target Clinic</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="casesTableBody">
+                                    <tr>
+                                        <td colspan="6" class="text-center">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Tab -->
+                    <div class="tab-pane fade" id="timeline" role="tabpanel">
+                        <div id="timelineContent">
+                            <p class="text-center text-muted">Loading timeline...</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Create PN Case Modal -->
+    <div class="modal fade" id="createPNModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create PN Case</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="pnForm">
+                        <div class="mb-3">
+                            <label for="pnDiagnosis" class="form-label">Diagnosis</label>
+                            <textarea class="form-control" id="pnDiagnosis" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pnPurpose" class="form-label">Purpose</label>
+                            <textarea class="form-control" id="pnPurpose" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="targetClinic" class="form-label">Target Clinic</label>
+                            <select class="form-select" id="targetClinic" required>
+                                <option value="">Select Clinic</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pnNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="pnNotes" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createPNCase()">Create Case</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const patientId = <%= patientId %>;
+        let patientData = null;
+
+        async function loadPatientData() {
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch(`/api/patients/${patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    patientData = await response.json();
+                    displayPatientInfo();
+                    loadPNCases();
+                    loadTimeline();
+                }
+            } catch (error) {
+                console.error('Error loading patient:', error);
+            }
+        }
+
+        function displayPatientInfo() {
+            document.getElementById('hn').textContent = patientData.hn || '-';
+            document.getElementById('ptNumber').textContent = patientData.pt_number || '-';
+            document.getElementById('fullName').textContent = `${patientData.first_name} ${patientData.last_name}`;
+            document.getElementById('dob').textContent = formatDate(patientData.dob);
+            document.getElementById('gender').textContent = patientData.gender || '-';
+            document.getElementById('phone').textContent = patientData.phone || '-';
+            document.getElementById('email').textContent = patientData.email || '-';
+            document.getElementById('clinic').textContent = patientData.clinic_name || '-';
+            document.getElementById('diagnosis').textContent = patientData.diagnosis || '-';
+            document.getElementById('rehabGoals').textContent = patientData.rehab_goal || '-';
+            document.getElementById('bodyArea').textContent = patientData.body_area || '-';
+            document.getElementById('precautions').textContent = patientData.precaution || '-';
+            document.getElementById('contraindications').textContent = patientData.contraindication || '-';
+            
+            // Pre-fill PN form with patient diagnosis
+            document.getElementById('pnDiagnosis').value = patientData.diagnosis || '';
+        }
+
+        async function loadPNCases() {
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch(`/api/pn?search=${patientData.hn}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayCases(data.cases.filter(c => c.patient_id == patientId));
+                }
+            } catch (error) {
+                console.error('Error loading cases:', error);
+            }
+        }
+
+        function displayCases(cases) {
+            const tbody = document.getElementById('casesTableBody');
+            
+            if (cases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No PN cases found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = cases.map(pnCase => `
+                <tr>
+                    <td><span class="badge bg-secondary">${pnCase.pn_code}</span></td>
+                    <td>${truncateText(pnCase.purpose, 50)}</td>
+                    <td>${pnCase.target_clinic_name}</td>
+                    <td>${getStatusBadge(pnCase.status)}</td>
+                    <td>${formatDate(pnCase.created_at)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="viewCase(${pnCase.id})">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadTimeline() {
+            // Implementation for loading patient timeline
+            document.getElementById('timelineContent').innerHTML = `
+                <div class="timeline-item">
+                    <strong>Patient Registered</strong><br>
+                    <small class="text-muted">${formatDateTime(patientData.created_at)}</small>
+                </div>
+            `;
+        }
+
+        async function loadClinics() {
+            try {
+                const token = getCookie('authToken');
+                const user = JSON.parse(localStorage.getItem('user'));
+
+                const response = await fetch('/api/clinics', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const clinics = await response.json();
+                    const select = document.getElementById('targetClinic');
+
+                    // For CLINIC role, lock target clinic to their own clinic
+                    if (user.role === 'CLINIC') {
+                        const userClinic = clinics.find(c => c.id == user.clinic_id);
+                        if (userClinic) {
+                            const option = document.createElement('option');
+                            option.value = userClinic.id;
+                            option.textContent = userClinic.name + ' (Your Clinic)';
+                            option.selected = true;
+                            select.appendChild(option);
+                            select.disabled = true; // Lock the selection
+                        }
+                    } else {
+                        // For ADMIN and PT, show all clinics
+                        clinics.forEach(clinic => {
+                            const option = document.createElement('option');
+                            option.value = clinic.id;
+                            option.textContent = clinic.name;
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading clinics:', error);
+            }
+        }
+
+        function showCreatePNModal() {
+            const modal = new bootstrap.Modal(document.getElementById('createPNModal'));
+            modal.show();
+        }
+
+        async function createPNCase() {
+            const formData = {
+                patient_id: patientId,
+                diagnosis: document.getElementById('pnDiagnosis').value,
+                purpose: document.getElementById('pnPurpose').value,
+                target_clinic_id: document.getElementById('targetClinic').value,
+                notes: document.getElementById('pnNotes').value
+            };
+            
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/pn', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`PN Case created successfully!\nPN Code: ${result.pn_code}`);
+                    bootstrap.Modal.getInstance(document.getElementById('createPNModal')).hide();
+                    loadPNCases();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        function viewCase(caseId) {
+            window.location.href = `/pn/${caseId}`;
+        }
+
+        function editPatient() {
+            // Implementation for edit patient
+            alert('Edit patient functionality to be implemented');
+        }
+
+        function getStatusBadge(status) {
+            const colors = {
+                'PENDING': 'warning',
+                'ACCEPTED': 'info',
+                'IN_PROGRESS': 'primary',
+                'COMPLETED': 'success',
+                'CANCELLED': 'danger'
+            };
+            return `<span class="badge bg-${colors[status] || 'secondary'}">${status}</span>`;
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-GB');
+        }
+
+        function formatDateTime(date) {
+            return new Date(date).toLocaleString('en-GB');
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPatientData();
+            loadClinics();
+            
+            // Check if should auto-open create PN modal
+            if (window.location.hash === '#create-pn') {
+                setTimeout(showCreatePNModal, 500);
+            }
+        });
+    </script>
+</body>
+</html>

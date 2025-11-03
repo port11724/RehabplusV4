@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Patient - PN-App System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+        .form-section h5 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #667eea;
+        }
+        .required::after {
+            content: " *";
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar p-0">
+                <div class="position-sticky pt-3">
+                    <div class="text-center text-white mb-4">
+                        <i class="bi bi-hospital" style="font-size: 2.5rem;"></i>
+                        <h5 class="mt-2">RehabPlus</h5>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/patients">
+                                <i class="bi bi-people me-2"></i>Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/patient/register">
+                                <i class="bi bi-person-plus me-2"></i>Register Patient
+                            </a>
+                        </li>
+                        <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/appointments">
+                                <i class="bi bi-calendar-check me-2"></i>Appointments
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (user.role === 'ADMIN') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/clinics">
+                                <i class="bi bi-building me-2"></i>Clinics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-person-gear me-2"></i>Users
+                            </a>
+                        </li>
+                        <% } %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/profile">
+                                <i class="bi bi-person-circle me-2"></i>Profile
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-left me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Register New Patient</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="history.back()">
+                            <i class="bi bi-arrow-left me-1"></i>Back
+                        </button>
+                    </div>
+                </div>
+
+                <form id="patientForm">
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h5><i class="bi bi-person-badge me-2"></i>Basic Information</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="hn" class="form-label required">HN (Hospital Number)</label>
+                                <input type="text" class="form-control" id="hn" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="pid" class="form-label">PID (Thai ID)</label>
+                                <input type="text" class="form-control" id="pid" maxlength="13">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="passport_no" class="form-label">Passport No.</label>
+                                <input type="text" class="form-control" id="passport_no">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-2 mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <select class="form-select" id="title">
+                                    <option value="">Select</option>
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Ms.">Ms.</option>
+                                    <option value="Dr.">Dr.</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="first_name" class="form-label required">First Name</label>
+                                <input type="text" class="form-control" id="first_name" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="last_name" class="form-label required">Last Name</label>
+                                <input type="text" class="form-control" id="last_name" required>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select class="form-select" id="gender">
+                                    <option value="">Select</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                    <option value="O">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="dob" class="form-label required">Date of Birth</label>
+                                <input type="text" class="form-control" id="dob" placeholder="Select date" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="phone">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="email">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <textarea class="form-control" id="address" rows="2"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="emergency_contact" class="form-label">Emergency Contact Name</label>
+                                <input type="text" class="form-control" id="emergency_contact">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="emergency_phone" class="form-label">Emergency Phone</label>
+                                <input type="tel" class="form-control" id="emergency_phone">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medical Information -->
+                    <div class="form-section">
+                        <h5><i class="bi bi-heart-pulse me-2"></i>Medical Information</h5>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="diagnosis" class="form-label required">Primary Diagnosis</label>
+                                <textarea class="form-control" id="diagnosis" rows="3" required></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="medical_history" class="form-label">Medical History</label>
+                                <textarea class="form-control" id="medical_history" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rehabilitation Information -->
+                    <div class="form-section">
+                        <h5><i class="bi bi-clipboard2-pulse me-2"></i>Rehabilitation Plan</h5>
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Rehabilitation Goals</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Pain reduction" id="goal1">
+                                    <label class="form-check-label" for="goal1">Pain reduction</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Improve ROM" id="goal2">
+                                    <label class="form-check-label" for="goal2">Improve range of motion</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Strengthen muscles" id="goal3">
+                                    <label class="form-check-label" for="goal3">Strengthen muscles</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Improve function" id="goal4">
+                                    <label class="form-check-label" for="goal4">Improve function</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="Other" id="goal5">
+                                    <label class="form-check-label" for="goal5">Other</label>
+                                </div>
+                                <input type="text" class="form-control mt-2" id="rehab_goal_other" placeholder="Specify other goals">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="body_area" class="form-label">Body Area</label>
+                                <select class="form-select" id="body_area">
+                                    <option value="">Select</option>
+                                    <option value="Neck">Neck</option>
+                                    <option value="Shoulder">Shoulder</option>
+                                    <option value="Elbow">Elbow</option>
+                                    <option value="Wrist/Hand">Wrist/Hand</option>
+                                    <option value="Upper Back">Upper Back</option>
+                                    <option value="Lower Back">Lower Back</option>
+                                    <option value="Hip">Hip</option>
+                                    <option value="Knee">Knee</option>
+                                    <option value="Ankle/Foot">Ankle/Foot</option>
+                                    <option value="Multiple Areas">Multiple Areas</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="frequency" class="form-label">Frequency</label>
+                                <select class="form-select" id="frequency">
+                                    <option value="">Select</option>
+                                    <option value="Daily">Daily</option>
+                                    <option value="3 times/week">3 times/week</option>
+                                    <option value="2 times/week">2 times/week</option>
+                                    <option value="Weekly">Weekly</option>
+                                    <option value="As needed">As needed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="expected_duration" class="form-label">Expected Duration</label>
+                                <select class="form-select" id="expected_duration">
+                                    <option value="">Select</option>
+                                    <option value="1-2 weeks">1-2 weeks</option>
+                                    <option value="2-4 weeks">2-4 weeks</option>
+                                    <option value="1-2 months">1-2 months</option>
+                                    <option value="2-3 months">2-3 months</option>
+                                    <option value="3-6 months">3-6 months</option>
+                                    <option value="Long-term">Long-term</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="precaution" class="form-label">Precautions</label>
+                                <textarea class="form-control" id="precaution" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contraindication" class="form-label">Contraindications</label>
+                                <textarea class="form-control" id="contraindication" rows="2"></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="doctor_note" class="form-label">Doctor's Note</label>
+                                <textarea class="form-control" id="doctor_note" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinic Selection (for Admin/PT) -->
+                    <% if (user.role === 'ADMIN' || user.role === 'PT' || user.role === 'PT_ADMIN') { %>
+                    <div class="form-section">
+                        <h5><i class="bi bi-building me-2"></i>Clinic Assignment</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="clinic_id" class="form-label required">Clinic</label>
+                                <select class="form-select" id="clinic_id" required>
+                                    <option value="">Select Clinic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+
+                    <!-- Action Buttons -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save me-2"></i>Register Patient
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-lg ms-2" onclick="clearForm()">
+                            <i class="bi bi-x-circle me-2"></i>Clear Form
+                        </button>
+                    </div>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Initialize date picker
+        flatpickr('#dob', {
+            dateFormat: 'Y-m-d',
+            maxDate: 'today'
+        });
+
+        // Load clinics
+        async function loadClinics() {
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/clinics', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const clinics = await response.json();
+                    const select = document.getElementById('clinic_id');
+                    if (select) {
+                        clinics.forEach(clinic => {
+                            const option = document.createElement('option');
+                            option.value = clinic.id;
+                            option.textContent = clinic.name;
+                            select.appendChild(option);
+                        });
+                        
+                        // Pre-select user's clinic if CLINIC role
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        if (user.role === 'CLINIC' && user.clinic_id) {
+                            select.value = user.clinic_id;
+                            select.disabled = true;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading clinics:', error);
+            }
+        }
+
+        // Form submission
+        document.getElementById('patientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Collect rehabilitation goals
+            const goals = [];
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+                if (cb.value !== 'Other') {
+                    goals.push(cb.value);
+                }
+            });
+            
+            const formData = {
+                hn: document.getElementById('hn').value,
+                pid: document.getElementById('pid').value,
+                passport_no: document.getElementById('passport_no').value,
+                title: document.getElementById('title').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                gender: document.getElementById('gender').value,
+                dob: document.getElementById('dob').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
+                emergency_contact: document.getElementById('emergency_contact').value,
+                emergency_phone: document.getElementById('emergency_phone').value,
+                diagnosis: document.getElementById('diagnosis').value,
+                medical_history: document.getElementById('medical_history').value,
+                rehab_goal: goals.join(', '),
+                rehab_goal_other: document.getElementById('rehab_goal_other').value,
+                body_area: document.getElementById('body_area').value,
+                frequency: document.getElementById('frequency').value,
+                expected_duration: document.getElementById('expected_duration').value,
+                precaution: document.getElementById('precaution').value,
+                contraindication: document.getElementById('contraindication').value,
+                doctor_note: document.getElementById('doctor_note').value
+            };
+            
+            // Add clinic_id if available
+            const clinicSelect = document.getElementById('clinic_id');
+            if (clinicSelect) {
+                formData.clinic_id = clinicSelect.value;
+            }
+            
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/patients', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Patient registered successfully!\nPT Number: ${result.pt_number}`);
+                    
+                    // Ask if want to create PN case
+                    if (confirm('Do you want to create a PN case for this patient?')) {
+                        window.location.href = `/patient/${result.patient_id}#create-pn`;
+                    } else {
+                        window.location.href = '/patients';
+                    }
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.error || 'Registration failed'));
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        });
+
+        function clearForm() {
+            if (confirm('Are you sure you want to clear all form data?')) {
+                document.getElementById('patientForm').reset();
+            }
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', loadClinics);
+    </script>
+</body>
+</html>

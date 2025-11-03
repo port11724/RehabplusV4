@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - PN-App System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar p-0">
+                <div class="position-sticky pt-3">
+                    <div class="text-center text-white mb-4">
+                        <i class="bi bi-hospital" style="font-size: 2.5rem;"></i>
+                        <h5 class="mt-2">RehabPlus</h5>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/patients">
+                                <i class="bi bi-people me-2"></i>Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/patient/register">
+                                <i class="bi bi-person-plus me-2"></i>Register Patient
+                            </a>
+                        </li>
+                        <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/appointments">
+                                <i class="bi bi-calendar-check me-2"></i>Appointments
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (user.role === 'ADMIN') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/clinics">
+                                <i class="bi bi-building me-2"></i>Clinics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-person-gear me-2"></i>Users
+                            </a>
+                        </li>
+                        <% } %>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/profile">
+                                <i class="bi bi-person-circle me-2"></i>Profile
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-left me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">My Profile</h1>
+                </div>
+
+                <!-- Profile Header -->
+                <div class="profile-header">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <div class="profile-avatar">
+                                <i class="bi bi-person"></i>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <h3 id="profileName">-</h3>
+                            <p class="mb-0">
+                                <span class="badge bg-light text-dark" id="profileRole">-</span>
+                                <span class="ms-2" id="profileEmail">-</span>
+                            </p>
+                            <p class="mb-0 mt-2">
+                                <small>Member since: <span id="memberSince">-</span></small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Profile Information -->
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Profile Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="profileForm">
+                                    <div class="mb-3">
+                                        <label for="firstName" class="form-label">First Name</label>
+                                        <input type="text" class="form-control" id="firstName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="lastName" class="form-label">Last Name</label>
+                                        <input type="text" class="form-control" id="lastName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" disabled>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="phone" class="form-label">Phone</label>
+                                        <input type="tel" class="form-control" id="phone">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="licenseNumber" class="form-label">License Number</label>
+                                        <input type="text" class="form-control" id="licenseNumber">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Update Profile
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Change Password</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="passwordForm">
+                                    <div class="mb-3">
+                                        <label for="currentPassword" class="form-label">Current Password</label>
+                                        <input type="password" class="form-control" id="currentPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="newPassword" class="form-label">New Password</label>
+                                        <input type="password" class="form-control" id="newPassword" required minlength="6">
+                                        <small class="text-muted">Minimum 6 characters</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                                        <input type="password" class="form-control" id="confirmPassword" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="bi bi-key me-2"></i>Change Password
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Access Information -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Access Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong>Primary Clinic:</strong>
+                                    <p id="primaryClinic">-</p>
+                                </div>
+                                <div id="clinicGrants">
+                                    <strong>Additional Access:</strong>
+                                    <ul id="grantsList">
+                                        <li>Loading...</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let userData = null;
+
+        async function loadProfile() {
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    userData = await response.json();
+                    displayProfile();
+                } else if (response.status === 401) {
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function displayProfile() {
+            // Header
+            document.getElementById('profileName').textContent = `${userData.first_name} ${userData.last_name}`;
+            document.getElementById('profileRole').textContent = userData.role;
+            document.getElementById('profileEmail').textContent = userData.email;
+            
+            // Form fields
+            document.getElementById('firstName').value = userData.first_name || '';
+            document.getElementById('lastName').value = userData.last_name || '';
+            document.getElementById('email').value = userData.email || '';
+            document.getElementById('phone').value = userData.phone || '';
+            document.getElementById('licenseNumber').value = userData.license_number || '';
+            
+            // Hide license number field if not PT
+            if (userData.role !== 'PT' && userData.role !== 'PT_ADMIN') {
+                document.getElementById('licenseNumber').parentElement.style.display = 'none';
+            }
+            
+            // Clinic information
+            document.getElementById('primaryClinic').textContent = userData.clinic_name || 'Not assigned';
+            
+            // Clinic grants
+            if (userData.clinic_grants && userData.clinic_grants.length > 0) {
+                const grantsList = document.getElementById('grantsList');
+                grantsList.innerHTML = userData.clinic_grants.map(grant => 
+                    `<li>${grant.clinic_name}</li>`
+                ).join('');
+            } else {
+                document.getElementById('clinicGrants').style.display = 'none';
+            }
+        }
+
+        // Update profile
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const updateData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                phone: document.getElementById('phone').value,
+                license_number: document.getElementById('licenseNumber').value
+            };
+            
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/auth/update-profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (response.ok) {
+                    alert('Profile updated successfully!');
+                    loadProfile();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        });
+
+        // Change password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match!');
+                return;
+            }
+            
+            const passwordData = {
+                current_password: document.getElementById('currentPassword').value,
+                new_password: newPassword
+            };
+            
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(passwordData)
+                });
+                
+                if (response.ok) {
+                    alert('Password changed successfully!');
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error. Please try again.');
+            }
+        });
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients - PN-App System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .patient-card {
+            border: none;
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .patient-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .search-box {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar p-0">
+                <div class="position-sticky pt-3">
+                    <div class="text-center text-white mb-4">
+                        <i class="bi bi-hospital" style="font-size: 2.5rem;"></i>
+                        <h5 class="mt-2">PN-App System</h5>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/patients">
+                                <i class="bi bi-people me-2"></i>Patients
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/patient/register">
+                                <i class="bi bi-person-plus me-2"></i>Register Patient
+                            </a>
+                        </li>
+                        <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/appointments">
+                                <i class="bi bi-calendar-check me-2"></i>Appointments
+                            </a>
+                        </li>
+                        <% } %>
+                        <% if (user.role === 'ADMIN') { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/clinics">
+                                <i class="bi bi-building me-2"></i>Clinics
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-person-gear me-2"></i>Users
+                            </a>
+                        </li>
+                        <% } %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/profile">
+                                <i class="bi bi-person-circle me-2"></i>Profile
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="#" onclick="logout()">
+                                <i class="bi bi-box-arrow-left me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Patients</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="location.href='/patient/register'">
+                            <i class="bi bi-plus-circle me-1"></i>New Patient
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search Box -->
+                <div class="search-box">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <input type="text" class="form-control" id="searchHN" placeholder="Search by HN">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <input type="text" class="form-control" id="searchName" placeholder="Search by Name">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <select class="form-select" id="filterClinic">
+                                <option value="">All Clinics</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 mb-2">
+                            <button class="btn btn-primary w-100" onclick="searchPatients()">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patients Grid -->
+                <div class="row" id="patientsGrid">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center" id="pagination">
+                    </ul>
+                </nav>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPage = 1;
+
+        async function loadClinics() {
+            try {
+                const token = getCookie('authToken');
+                const response = await fetch('/api/clinics', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const clinics = await response.json();
+                    const select = document.getElementById('filterClinic');
+                    
+                    clinics.forEach(clinic => {
+                        const option = document.createElement('option');
+                        option.value = clinic.id;
+                        option.textContent = clinic.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading clinics:', error);
+            }
+        }
+
+        async function loadPatients(page = 1) {
+            try {
+                currentPage = page;
+                const params = new URLSearchParams({
+                    page: page,
+                    limit: 12
+                });
+                
+                const searchHN = document.getElementById('searchHN').value;
+                const searchName = document.getElementById('searchName').value;
+                const clinicId = document.getElementById('filterClinic').value;
+                
+                if (searchHN || searchName) {
+                    params.append('search', searchHN || searchName);
+                }
+                if (clinicId) {
+                    params.append('clinic_id', clinicId);
+                }
+                
+                const token = getCookie('authToken');
+                const response = await fetch(`/api/patients?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayPatients(data.patients);
+                    displayPagination(data.pagination);
+                }
+            } catch (error) {
+                console.error('Error loading patients:', error);
+            }
+        }
+
+        function displayPatients(patients) {
+            const grid = document.getElementById('patientsGrid');
+            
+            if (patients.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-12 text-center">
+                        <p class="text-muted">No patients found</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = patients.map(patient => `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card patient-card h-100" onclick="viewPatient(${patient.id})">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">${patient.first_name} ${patient.last_name}</h5>
+                                <span class="badge bg-primary">${patient.hn}</span>
+                            </div>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-card-text me-1"></i>PT: ${patient.pt_number}<br>
+                                    <i class="bi bi-calendar me-1"></i>DOB: ${formatDate(patient.dob)}<br>
+                                    <i class="bi bi-building me-1"></i>${patient.clinic_name}<br>
+                                    <i class="bi bi-file-medical me-1"></i>${truncateText(patient.diagnosis, 50)}
+                                </small>
+                            </p>
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewPatient(${patient.id})">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); createPN(${patient.id})">
+                                    <i class="bi bi-plus-circle"></i> PN
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayPagination(pagination) {
+            const paginationEl = document.getElementById('pagination');
+            const { page, pages } = pagination;
+            
+            if (pages <= 1) {
+                paginationEl.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            // Previous
+            html += `
+                <li class="page-item ${page === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadPatients(${page - 1}); return false;">Previous</a>
+                </li>
+            `;
+            
+            // Pages
+            for (let i = 1; i <= Math.min(pages, 5); i++) {
+                html += `
+                    <li class="page-item ${i === page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadPatients(${i}); return false;">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // Next
+            html += `
+                <li class="page-item ${page === pages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="loadPatients(${page + 1}); return false;">Next</a>
+                </li>
+            `;
+            
+            paginationEl.innerHTML = html;
+        }
+
+        function searchPatients() {
+            loadPatients(1);
+        }
+
+        function viewPatient(id) {
+            window.location.href = `/patient/${id}`;
+        }
+
+        function createPN(patientId) {
+            window.location.href = `/patient/${patientId}#create-pn`;
+        }
+
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-GB');
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        function logout() {
+            document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            localStorage.clear();
+            window.location.href = '/login';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadClinics();
+            loadPatients();
+            
+            // Search on enter
+            document.getElementById('searchHN').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchPatients();
+            });
+            document.getElementById('searchName').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchPatients();
+            });
+        });
+    </script>
+</body>
+</html>

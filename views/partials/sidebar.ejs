@@ -1,0 +1,78 @@
+<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar collapse p-0" style="z-index: 1050;">
+    <div class="position-sticky pt-3">
+        <div class="text-center text-white mb-4">
+            <img src="/public/images/RehabPlus.png" alt="App Logo" style="width: 120px; height: auto;">
+            <h5 class="mt-2 text-white">RehabPlus System</h5>
+        </div>
+
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a 
+class="nav-link" href="/dashboard">
+                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/patients">
+                 
+<i class="bi bi-people me-2"></i>Patients
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/patient/register">
+                    <i class="bi bi-person-plus me-2"></i>Register Patient
+
+      </a>
+            </li>
+            <% if (user.role === 'ADMIN' || user.role === 'PT') { %>
+            <li class="nav-item">
+                <a class="nav-link" href="/appointments">
+                    <i class="bi bi-calendar-check me-2"></i>Appointments
+                </a>
+            </li>
+            <% } %>
+            <% if (user.role === 'ADMIN') { %>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/clinics">
+                    <i class="bi bi-building me-2"></i>Clinics
+           
+      </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/users">
+                    <i class="bi bi-person-gear me-2"></i>Users
+                </a>
+            </li>
+ 
+<% } %>
+            <li class="nav-item">
+                <a class="nav-link" href="/profile">
+                    <i class="bi bi-person-circle me-2"></i>Profile
+                </a>
+            </li>
+     
+<li class="nav-item mt-3">
+                <a class="nav-link" href="#" onclick="logout()">
+                    <i class="bi bi-box-arrow-left me-2"></i>Logout
+                </a>
+            </li>
+        </ul>
+
+        <div class="text-white text-center mt-5 px-3">
+ 
+<small>Logged in as:</small><br>
+            <strong><%= user.name ||
+user.email %></strong><br>
+            <span class="badge bg-light text-dark mt-1"><%= user.role %></span>
+        </div>
+    </div>
+</nav>
+
+<script>
+function logout() {
+    document.cookie = 'authToken=;
+expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.clear();
+    window.location.href = '/login';
+}
+</script>
