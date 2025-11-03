@@ -323,6 +323,7 @@
     </style>
 </head>
 <body>
+    <% const canManageAppointments = (user.role === 'ADMIN' || user.role === 'PT'); %>
     <div class="container-fluid">
         <div class="row">
             <!-- Global Sidebar -->
@@ -343,9 +344,11 @@
                                 <i class="bi bi-calendar3"></i> Manage PT appointments and schedules
                             </p>
                         </div>
-                        <button type="button" class="btn btn-light btn-lg" onclick="showBookingModal()">
-                            <i class="bi bi-plus-circle"></i> New Appointment
-                        </button>
+                        <% if (canManageAppointments) { %>
+                            <button type="button" class="btn btn-light btn-lg" onclick="showBookingModal()">
+                                <i class="bi bi-plus-circle"></i> New Appointment
+                            </button>
+                        <% } %>
                     </div>
                 </div>
 
@@ -616,15 +619,17 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Close
                     </button>
-                    <button type="button" class="btn btn-warning" onclick="rescheduleAppointment()">
-                        <i class="bi bi-calendar-x"></i> Reschedule
-                    </button>
-                    <button type="button" class="btn btn-success" onclick="markAsCompleted()">
-                        <i class="bi bi-check-circle"></i> Mark Completed
-                    </button>
-                    <button type="button" class="btn btn-danger" onclick="cancelAppointment()">
-                        <i class="bi bi-x-octagon"></i> Cancel
-                    </button>
+                    <% if (canManageAppointments) { %>
+                        <button type="button" class="btn btn-warning" onclick="rescheduleAppointment()">
+                            <i class="bi bi-calendar-x"></i> Reschedule
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="markAsCompleted()">
+                            <i class="bi bi-check-circle"></i> Mark Completed
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="cancelAppointment()">
+                            <i class="bi bi-x-octagon"></i> Cancel
+                        </button>
+                    <% } %>
                 </div>
             </div>
         </div>
