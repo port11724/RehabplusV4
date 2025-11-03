@@ -104,11 +104,11 @@ const authorize = (...roles) => {
         if (!req.user) {
             return res.status(401).json({ error: 'Authentication required' });
         }
-        
+
         if (!roles.includes(req.user.role)) {
             return res.status(403).json({ error: 'Insufficient permissions' });
         }
-        
+
         next();
     };
 };
@@ -149,6 +149,31 @@ const checkClinicAccess = async (req, res, next) => {
         console.error('Clinic access check error:', error);
         return res.status(500).json({ error: 'Access verification failed' });
     }
+};
+
+// Helper to resolve clinic access lists for non-admin users
+const getAccessibleClinicIds = async (db, user) => {
+    if (!user || user.role === 'ADMIN') {
+        return [];
+    }
+
+    const clinicIds = new Set();
+
+    if (user.clinic_id) {
+        clinicIds.add(user.clinic_id);
+    }
+
+    const [grants] = await db.execute(
+        'SELECT clinic_id FROM user_clinic_grants WHERE user_id = ?',
+        [user.id]
+    );
+
+    grants
+        .map(grant => grant.clinic_id)
+        .filter(id => id)
+        .forEach(id => clinicIds.add(id));
+
+    return Array.from(clinicIds);
 };
 
 // File upload configuration
@@ -520,14 +545,34 @@ app.get('/api/patients/search', authenticateToken, async (req, res) => {
         }
 
         const searchPattern = `%${q}%`;
-        const [patients] = await db.execute(
-            `SELECT p.id, p.hn, p.pt_number, p.first_name, p.last_name, p.dob, p.gender, p.diagnosis
-             FROM patients p
-             WHERE p.hn LIKE ? OR p.pt_number LIKE ? OR p.first_name LIKE ? OR p.last_name LIKE ?
-             ORDER BY p.last_name, p.first_name
-             LIMIT 20`,
-            [searchPattern, searchPattern, searchPattern, searchPattern]
-        );
+        let query = `
+            SELECT p.id, p.hn, p.pt_number, p.first_name, p.last_name, p.dob, p.gender, p.diagnosis
+            FROM patients p
+            WHERE (
+                p.hn LIKE ? OR
+                p.pt_number LIKE ? OR
+                p.first_name LIKE ? OR
+                p.last_name LIKE ?
+            )
+        `;
+        const params = [searchPattern, searchPattern, searchPattern, searchPattern];
+
+        if (req.user.role !== 'ADMIN') {
+            const accessibleClinics = await getAccessibleClinicIds(db, req.user);
+
+            if (req.user.role === 'CLINIC' && accessibleClinics.length === 0) {
+                return res.json([]);
+            }
+
+            if (accessibleClinics.length > 0) {
+                query += ` AND p.clinic_id IN (${accessibleClinics.map(() => '?').join(',')})`;
+                params.push(...accessibleClinics);
+            }
+        }
+
+        query += ' ORDER BY p.last_name, p.first_name LIMIT 20';
+
+        const [patients] = await db.execute(query, params);
 
         res.json(patients);
     } catch (error) {
@@ -1459,27 +1504,64 @@ app.get('/api/pn/:id', authenticateToken, async (req, res) => {
 // APPOINTMENT ROUTES (NEW)
 // ========================================
 
+// Shared select clause for appointment queries
+const appointmentSelectClause = `
+    SELECT
+        a.id,
+        a.patient_id,
+        a.pt_id,
+        a.clinic_id,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointment_date,
+        TIME_FORMAT(a.start_time, '%H:%i:%s') AS start_time,
+        TIME_FORMAT(a.end_time, '%H:%i:%s') AS end_time,
+        a.status,
+        a.appointment_type,
+        a.reason,
+        a.notes,
+        a.created_by,
+        DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+        DATE_FORMAT(a.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at,
+        a.cancellation_reason,
+        DATE_FORMAT(a.cancelled_at, '%Y-%m-%d %H:%i:%s') AS cancelled_at,
+        a.cancelled_by,
+        p.hn,
+        p.pt_number,
+        p.first_name,
+        p.last_name,
+        p.gender,
+        p.dob,
+        CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+        CONCAT_WS(' ', pt.first_name, pt.last_name) AS pt_name,
+        c.name AS clinic_name,
+        CONCAT_WS(' ', creator.first_name, creator.last_name) AS created_by_name,
+        CONCAT_WS(' ', canceller.first_name, canceller.last_name) AS cancelled_by_name
+    FROM appointments a
+    JOIN patients p ON a.patient_id = p.id
+    LEFT JOIN users pt ON a.pt_id = pt.id
+    JOIN clinics c ON a.clinic_id = c.id
+    LEFT JOIN users creator ON a.created_by = creator.id
+    LEFT JOIN users canceller ON a.cancelled_by = canceller.id
+`;
+
 // Get all appointments (with filters)
 app.get('/api/appointments', authenticateToken, async (req, res) => {
     try {
         const db = req.app.locals.db;
         const { pt_id, clinic_id, start_date, end_date, status } = req.query;
 
-        let query = `
-            SELECT
-                a.*,
-                p.hn, p.pt_number, p.first_name, p.last_name, p.gender, p.dob,
-                CONCAT(pt.first_name, ' ', pt.last_name) as pt_name,
-                c.name as clinic_name,
-                CONCAT(u.first_name, ' ', u.last_name) as created_by_name
-            FROM appointments a
-            JOIN patients p ON a.patient_id = p.id
-            JOIN users pt ON a.pt_id = pt.id
-            JOIN clinics c ON a.clinic_id = c.id
-            JOIN users u ON a.created_by = u.id
-            WHERE 1=1
-        `;
+        const accessibleClinics = await getAccessibleClinicIds(db, req.user);
+
+        if (req.user.role === 'CLINIC' && accessibleClinics.length === 0) {
+            return res.json([]);
+        }
+
+        let query = `${appointmentSelectClause} WHERE 1=1`;
         const params = [];
+
+        if (req.user.role !== 'ADMIN' && accessibleClinics.length > 0) {
+            query += ` AND a.clinic_id IN (${accessibleClinics.map(() => '?').join(',')})`;
+            params.push(...accessibleClinics);
+        }
 
         // Filter by PT
         if (pt_id) {
@@ -1618,15 +1700,7 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
 
         // Get created appointment details
         const [appointments] = await db.execute(
-            `SELECT a.*,
-                    p.hn, CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                    CONCAT(pt.first_name, ' ', pt.last_name) as pt_name,
-                    c.name as clinic_name
-             FROM appointments a
-             JOIN patients p ON a.patient_id = p.id
-             JOIN users pt ON a.pt_id = pt.id
-             JOIN clinics c ON a.clinic_id = c.id
-             WHERE a.id = ?`,
+            `${appointmentSelectClause} WHERE a.id = ?`,
             [result.insertId]
         );
 
@@ -1733,15 +1807,7 @@ app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
 
         // Get updated appointment
         const [updated] = await db.execute(
-            `SELECT a.*,
-                    p.hn, CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                    CONCAT(pt.first_name, ' ', pt.last_name) as pt_name,
-                    c.name as clinic_name
-             FROM appointments a
-             JOIN patients p ON a.patient_id = p.id
-             JOIN users pt ON a.pt_id = pt.id
-             JOIN clinics c ON a.clinic_id = c.id
-             WHERE a.id = ?`,
+            `${appointmentSelectClause} WHERE a.id = ?`,
             [id]
         );
 
@@ -2626,10 +2692,10 @@ app.get('/dashboard', authenticateToken, (req, res) => {
     res.render('dashboard', { user: req.user });
 });
 
-// Appointments page (PT and ADMIN only)
+// Appointments page (ADMIN/PT manage, CLINIC read-only)
 app.get('/appointments', authenticateToken, (req, res) => {
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'PT') {
-        return res.status(403).send('Access denied. Only ADMIN or PT can access appointments.');
+    if (!['ADMIN', 'PT', 'CLINIC'].includes(req.user.role)) {
+        return res.status(403).send('Access denied. Only ADMIN, PT, or CLINIC roles can access appointments.');
     }
     res.render('appointments', { user: req.user });
 });

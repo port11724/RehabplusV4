@@ -2,6 +2,7 @@
 let calendar;
 let currentAppointmentId = null;
 let allAppointments = [];
+const canManageAppointments = window.userInfo && (window.userInfo.role === 'ADMIN' || window.userInfo.role === 'PT');
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -62,6 +63,42 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+function normalizeDate(value) {
+    if (!value) return '';
+    return moment(value).format('YYYY-MM-DD');
+}
+
+function parseTime(value) {
+    if (!value) return null;
+    const parsed = moment(value, ['HH:mm:ss', 'HH:mm', moment.ISO_8601], true);
+    return parsed.isValid() ? parsed : moment(value);
+}
+
+function normalizeTime(value) {
+    const parsed = parseTime(value);
+    return parsed ? parsed.format('HH:mm:ss') : '';
+}
+
+function formatTimeForInput(value) {
+    const parsed = parseTime(value);
+    return parsed ? parsed.format('HH:mm') : '';
+}
+
+function buildDateTime(date, time) {
+    if (!date || !time) return '';
+    const dt = moment(`${date} ${time}`, ['YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD HH:mm', moment.ISO_8601], true);
+    return (dt.isValid() ? dt : moment(`${date}T${time}`)).format('YYYY-MM-DDTHH:mm:ss');
+}
+
+function formatStatusLabel(status) {
+    if (!status) return '';
+    return status
+        .toString()
+        .split('_')
+        .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+        .join(' ');
+}
+
 // Initialize FullCalendar
 function initializeCalendar() {
     const calendarEl = document.getElementById('calendar');
@@ -80,12 +117,15 @@ function initializeCalendar() {
         expandRows: true,
         nowIndicator: true,
         editable: false,
-        selectable: true,
-        selectMirror: true,
+        selectable: !!canManageAppointments,
+        selectMirror: !!canManageAppointments,
         dayMaxEvents: true,
 
         // Click on empty slot to create appointment
         select: function(info) {
+            if (!canManageAppointments) {
+                return;
+            }
             showBookingModal();
             document.getElementById('appointmentDate').value = moment(info.start).format('YYYY-MM-DD');
             document.getElementById('appointmentStartTime').value = moment(info.start).format('HH:mm');
@@ -205,21 +245,46 @@ async function loadAppointments(fetchInfo, successCallback, failureCallback) {
              throw new Error('Failed to load appointments');
         }
 
-        allAppointments = await response.json();
+        const rawAppointments = await response.json();
+        allAppointments = rawAppointments.map(apt => {
+            const appointmentDate = normalizeDate(apt.appointment_date);
+            const startTime = normalizeTime(apt.start_time);
+            const endTime = normalizeTime(apt.end_time);
+            const startDateTime = buildDateTime(appointmentDate, startTime);
+            const endDateTime = buildDateTime(appointmentDate, endTime);
+            const fallbackName = [apt.first_name, apt.last_name].filter(Boolean).join(' ').trim();
+            const patientName = (apt.patient_name || fallbackName || 'Unknown patient').trim();
+            const ptName = (apt.pt_name || 'Unassigned PT').trim();
+
+            return {
+                ...apt,
+                appointment_date: appointmentDate,
+                start_time: startTime,
+                end_time: endTime,
+                start_datetime: startDateTime,
+                end_datetime: endDateTime,
+                patient_name: patientName,
+                pt_name: ptName,
+                clinic_name: apt.clinic_name || 'Unknown clinic',
+                created_by_name: apt.created_by_name || '',
+                cancelled_by_name: apt.cancelled_by_name || ''
+            };
+        });
         // console.log('Appointments loaded:', allAppointments); // DEBUG
 
         // Calculate quick stats
         calculateQuickStats(allAppointments);
+        renderUpcomingAppointments(allAppointments);
 
         // Convert to FullCalendar events
         const events = allAppointments.map(apt => ({
             id: apt.id,
-            title: `${apt.patient_name} (${apt.pt_name})`, // Updated title
-            start: `${apt.appointment_date}T${apt.start_time}`,
-            end: `${apt.appointment_date}T${apt.end_time}`,
+            title: `${apt.patient_name} • ${apt.pt_name}`,
+            start: apt.start_datetime,
+            end: apt.end_datetime,
             backgroundColor: getStatusColor(apt.status),
             borderColor: getStatusColor(apt.status),
-            classNames: [`appointment-status-${apt.status}`], // Add status class
+            classNames: [`appointment-status-${apt.status}`],
             extendedProps: {
                 appointment: apt
             }
@@ -249,14 +314,25 @@ function getStatusColor(status) {
 
 // Show booking modal
 function showBookingModal() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to create appointments.', 'warning');
+        return;
+    }
+    const modalEl = document.getElementById('bookingModal');
+    const form = document.getElementById('appointmentForm');
+
+    if (!modalEl || !form) {
+        console.error('Booking modal elements are missing from the page.');
+        return;
+    }
     currentAppointmentId = null;
-    document.getElementById('appointmentForm').reset();
+    form.reset();
     document.getElementById('modalTitle').textContent = 'New Appointment';
     document.getElementById('selectedPatientInfo').style.display = 'none';
     document.getElementById('patientSearchResults').style.display = 'none';
     document.getElementById('conflictWarning').style.display = 'none';
 
-    const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+    const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }
 
@@ -387,6 +463,10 @@ async function checkConflicts() {
 
 // Save appointment
 async function saveAppointment() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to modify appointments.', 'warning');
+        return;
+    }
     const patientId = document.getElementById('selectedPatientId').value;
     const ptId = document.getElementById('appointmentPT').value;
     const clinicId = document.getElementById('appointmentClinic').value;
@@ -447,7 +527,11 @@ async function saveAppointment() {
         showAlert(`Appointment ${currentAppointmentId ? 'updated' : 'created'} successfully!`, 'success');
 
         // Close modal and refetch events
-        bootstrap.Modal.getInstance(document.getElementById('bookingModal')).hide();
+        const modalEl = document.getElementById('bookingModal');
+        const modalInstance = modalEl ? bootstrap.Modal.getInstance(modalEl) : null;
+        if (modalInstance) {
+            modalInstance.hide();
+        }
         // This will trigger the 'events' function in FullCalendar
         calendar.refetchEvents();
 
@@ -470,6 +554,13 @@ async function viewAppointmentDetails(appointmentId) {
 
     currentAppointmentId = appointmentId;
 
+    const statusLabel = formatStatusLabel(appointment.status);
+    const startMoment = moment(appointment.start_datetime || `${appointment.appointment_date}T${appointment.start_time}`);
+    const endMoment = moment(appointment.end_datetime || `${appointment.appointment_date}T${appointment.end_time}`);
+    const createdMoment = appointment.created_at ? moment(appointment.created_at) : null;
+    const updatedMoment = appointment.updated_at ? moment(appointment.updated_at) : null;
+    const cancelledMoment = appointment.cancelled_at ? moment(appointment.cancelled_at) : null;
+
     const detailsHtml = `
         <div class="row">
             <div class="col-md-6">
@@ -480,23 +571,28 @@ async function viewAppointmentDetails(appointmentId) {
             <div class="col-md-6">
                 <p><strong>PT:</strong> ${appointment.pt_name}</p>
                 <p><strong>Clinic:</strong> ${appointment.clinic_name}</p>
-                <p><strong>Status:</strong> <span class="badge bg-${getStatusBadge(appointment.status)}">${appointment.status}</span></p>
+                <p><strong>Status:</strong> <span class="badge bg-${getStatusBadge(appointment.status)}">${statusLabel}</span></p>
             </div>
         </div>
         <hr>
         <div class="row">
             <div class="col-md-12">
                 <p><strong>Date:</strong> ${moment(appointment.appointment_date).format('dddd, MMMM DD, YYYY')}</p>
-                <p><strong>Time:</strong> ${appointment.start_time} - ${appointment.end_time}</p>
+                <p><strong>Time:</strong> ${startMoment.format('HH:mm')} - ${endMoment.format('HH:mm')}</p>
                 ${appointment.appointment_type ? `<p><strong>Type:</strong> ${appointment.appointment_type}</p>` : ''}
                 ${appointment.reason ? `<p><strong>Reason:</strong> ${appointment.reason}</p>` : ''}
                 ${appointment.notes ? `<p><strong>Notes:</strong> ${appointment.notes}</p>` : ''}
+                ${appointment.created_by_name ? `<p><strong>Created by:</strong> ${appointment.created_by_name}</p>` : ''}
+                ${createdMoment ? `<p><strong>Created at:</strong> ${createdMoment.format('DD MMM YYYY HH:mm')}</p>` : ''}
+                ${updatedMoment ? `<p><strong>Last updated:</strong> ${updatedMoment.format('DD MMM YYYY HH:mm')}</p>` : ''}
             </div>
         </div>
         ${appointment.cancellation_reason ? `
             <hr>
             <div class="alert alert-warning">
-                <strong>Cancellation Reason:</strong> ${appointment.cancellation_reason}
+                <strong>Cancellation Reason:</strong> ${appointment.cancellation_reason}<br>
+                ${appointment.cancelled_by_name ? `<span>Cancelled by: ${appointment.cancelled_by_name}</span><br>` : ''}
+                ${cancelledMoment ? `<span>Cancelled at: ${cancelledMoment.format('DD MMM YYYY HH:mm')}</span>` : ''}
             </div>
         ` : ''}
     `;
@@ -520,6 +616,10 @@ function getStatusBadge(status) {
 
 // Reschedule appointment
 function rescheduleAppointment() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to reschedule appointments.', 'warning');
+        return;
+    }
     const appointment = allAppointments.find(a => a.id == currentAppointmentId);
 
     if (!appointment) return;
@@ -540,8 +640,8 @@ function rescheduleAppointment() {
     document.getElementById('appointmentPT').value = appointment.pt_id;
     document.getElementById('appointmentClinic').value = appointment.clinic_id;
     document.getElementById('appointmentDate').value = appointment.appointment_date;
-    document.getElementById('appointmentStartTime').value = appointment.start_time;
-    document.getElementById('appointmentEndTime').value = appointment.end_time;
+    document.getElementById('appointmentStartTime').value = formatTimeForInput(appointment.start_time);
+    document.getElementById('appointmentEndTime').value = formatTimeForInput(appointment.end_time);
     document.getElementById('appointmentType').value = appointment.appointment_type || '';
     document.getElementById('appointmentReason').value = appointment.reason || '';
     document.getElementById('appointmentNotes').value = appointment.notes || '';
@@ -549,6 +649,10 @@ function rescheduleAppointment() {
 
 // Mark appointment as completed
 async function markAsCompleted() { // <-- SYNTAX ERROR FIX: Removed the extra '.'
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to update appointments.', 'warning');
+        return;
+    }
     if (!confirm('Mark this appointment as completed?')) return;
 
     try {
@@ -577,6 +681,10 @@ async function markAsCompleted() { // <-- SYNTAX ERROR FIX: Removed the extra '.
 
 // Cancel appointment
 async function cancelAppointment() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to cancel appointments.', 'warning');
+        return;
+    }
     const reason = prompt('Please enter cancellation reason:');
 
     if (reason === null) return; // User cancelled
@@ -640,5 +748,61 @@ function calculateQuickStats(appointments) {
     document.getElementById('todayCount').textContent = todayCount;
     document.getElementById('weekCount').textContent = weekCount;
     document.getElementById('monthCount').textContent = monthCount;
+}
+
+function renderUpcomingAppointments(appointments) {
+    const list = document.getElementById('upcomingAppointments');
+    const emptyState = document.getElementById('upcomingEmptyState');
+    const countBadge = document.getElementById('upcomingCount');
+
+    if (!list || !emptyState || !countBadge) {
+        return;
+    }
+
+    list.innerHTML = '';
+
+    const now = moment();
+    const horizon = moment().add(14, 'days').endOf('day');
+
+    const upcoming = appointments
+        .filter(apt => apt.status !== 'CANCELLED')
+        .map(apt => {
+            const startMoment = moment(apt.start_datetime || `${apt.appointment_date}T${apt.start_time}`);
+            const endMoment = moment(apt.end_datetime || `${apt.appointment_date}T${apt.end_time}`);
+            return { ...apt, startMoment, endMoment };
+        })
+        .filter(apt => apt.startMoment.isValid() && apt.startMoment.isSameOrAfter(now, 'minute'))
+        .filter(apt => apt.startMoment.isSameOrBefore(horizon, 'minute'))
+        .sort((a, b) => a.startMoment.valueOf() - b.startMoment.valueOf());
+
+    countBadge.textContent = upcoming.length;
+
+    if (upcoming.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+    }
+
+    emptyState.style.display = 'none';
+
+    upcoming.slice(0, 5).forEach(apt => {
+        const item = document.createElement('li');
+        item.className = 'list-group-item p-3';
+        item.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                    <div class="fw-semibold">${apt.patient_name}</div>
+                    <div class="text-muted small">${apt.startMoment.format('ddd, DD MMM YYYY')} · ${apt.startMoment.format('HH:mm')} - ${apt.endMoment.format('HH:mm')}</div>
+                    <div class="text-muted small">
+                        <i class="bi bi-person-badge me-1"></i>${apt.pt_name}
+                        <span class="mx-1">•</span>
+                        <i class="bi bi-building me-1"></i>${apt.clinic_name}
+                    </div>
+                </div>
+                <span class="badge rounded-pill bg-${getStatusBadge(apt.status)}">${formatStatusLabel(apt.status)}</span>
+            </div>
+        `;
+        item.addEventListener('click', () => viewAppointmentDetails(apt.id));
+        list.appendChild(item);
+    });
 }
 
