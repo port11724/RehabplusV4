@@ -2,6 +2,7 @@
 let calendar;
 let currentAppointmentId = null;
 let allAppointments = [];
+const canManageAppointments = window.userInfo && (window.userInfo.role === 'ADMIN' || window.userInfo.role === 'PT');
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -80,12 +81,15 @@ function initializeCalendar() {
         expandRows: true,
         nowIndicator: true,
         editable: false,
-        selectable: true,
-        selectMirror: true,
+        selectable: !!canManageAppointments,
+        selectMirror: !!canManageAppointments,
         dayMaxEvents: true,
 
         // Click on empty slot to create appointment
         select: function(info) {
+            if (!canManageAppointments) {
+                return;
+            }
             showBookingModal();
             document.getElementById('appointmentDate').value = moment(info.start).format('YYYY-MM-DD');
             document.getElementById('appointmentStartTime').value = moment(info.start).format('HH:mm');
@@ -205,7 +209,18 @@ async function loadAppointments(fetchInfo, successCallback, failureCallback) {
              throw new Error('Failed to load appointments');
         }
 
-        allAppointments = await response.json();
+        const rawAppointments = await response.json();
+        allAppointments = rawAppointments.map(apt => {
+            const fallbackName = [apt.first_name, apt.last_name].filter(Boolean).join(' ').trim();
+            const patientName = (apt.patient_name || fallbackName || 'Unknown patient').trim();
+            const ptName = (apt.pt_name || 'Unassigned PT').trim();
+
+            return {
+                ...apt,
+                patient_name: patientName,
+                pt_name: ptName
+            };
+        });
         // console.log('Appointments loaded:', allAppointments); // DEBUG
 
         // Calculate quick stats
@@ -214,12 +229,12 @@ async function loadAppointments(fetchInfo, successCallback, failureCallback) {
         // Convert to FullCalendar events
         const events = allAppointments.map(apt => ({
             id: apt.id,
-            title: `${apt.patient_name} (${apt.pt_name})`, // Updated title
+            title: `${apt.patient_name} (${apt.pt_name})`,
             start: `${apt.appointment_date}T${apt.start_time}`,
             end: `${apt.appointment_date}T${apt.end_time}`,
             backgroundColor: getStatusColor(apt.status),
             borderColor: getStatusColor(apt.status),
-            classNames: [`appointment-status-${apt.status}`], // Add status class
+            classNames: [`appointment-status-${apt.status}`],
             extendedProps: {
                 appointment: apt
             }
@@ -249,6 +264,10 @@ function getStatusColor(status) {
 
 // Show booking modal
 function showBookingModal() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to create appointments.', 'warning');
+        return;
+    }
     currentAppointmentId = null;
     document.getElementById('appointmentForm').reset();
     document.getElementById('modalTitle').textContent = 'New Appointment';
@@ -387,6 +406,10 @@ async function checkConflicts() {
 
 // Save appointment
 async function saveAppointment() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to modify appointments.', 'warning');
+        return;
+    }
     const patientId = document.getElementById('selectedPatientId').value;
     const ptId = document.getElementById('appointmentPT').value;
     const clinicId = document.getElementById('appointmentClinic').value;
@@ -520,6 +543,10 @@ function getStatusBadge(status) {
 
 // Reschedule appointment
 function rescheduleAppointment() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to reschedule appointments.', 'warning');
+        return;
+    }
     const appointment = allAppointments.find(a => a.id == currentAppointmentId);
 
     if (!appointment) return;
@@ -549,6 +576,10 @@ function rescheduleAppointment() {
 
 // Mark appointment as completed
 async function markAsCompleted() { // <-- SYNTAX ERROR FIX: Removed the extra '.'
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to update appointments.', 'warning');
+        return;
+    }
     if (!confirm('Mark this appointment as completed?')) return;
 
     try {
@@ -577,6 +608,10 @@ async function markAsCompleted() { // <-- SYNTAX ERROR FIX: Removed the extra '.
 
 // Cancel appointment
 async function cancelAppointment() {
+    if (!canManageAppointments) {
+        showAlert('You do not have permission to cancel appointments.', 'warning');
+        return;
+    }
     const reason = prompt('Please enter cancellation reason:');
 
     if (reason === null) return; // User cancelled
