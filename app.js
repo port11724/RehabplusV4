@@ -1504,6 +1504,45 @@ app.get('/api/pn/:id', authenticateToken, async (req, res) => {
 // APPOINTMENT ROUTES (NEW)
 // ========================================
 
+// Shared select clause for appointment queries
+const appointmentSelectClause = `
+    SELECT
+        a.id,
+        a.patient_id,
+        a.pt_id,
+        a.clinic_id,
+        DATE_FORMAT(a.appointment_date, '%Y-%m-%d') AS appointment_date,
+        TIME_FORMAT(a.start_time, '%H:%i:%s') AS start_time,
+        TIME_FORMAT(a.end_time, '%H:%i:%s') AS end_time,
+        a.status,
+        a.appointment_type,
+        a.reason,
+        a.notes,
+        a.created_by,
+        DATE_FORMAT(a.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+        DATE_FORMAT(a.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at,
+        a.cancellation_reason,
+        DATE_FORMAT(a.cancelled_at, '%Y-%m-%d %H:%i:%s') AS cancelled_at,
+        a.cancelled_by,
+        p.hn,
+        p.pt_number,
+        p.first_name,
+        p.last_name,
+        p.gender,
+        p.dob,
+        CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+        CONCAT_WS(' ', pt.first_name, pt.last_name) AS pt_name,
+        c.name AS clinic_name,
+        CONCAT_WS(' ', creator.first_name, creator.last_name) AS created_by_name,
+        CONCAT_WS(' ', canceller.first_name, canceller.last_name) AS cancelled_by_name
+    FROM appointments a
+    JOIN patients p ON a.patient_id = p.id
+    LEFT JOIN users pt ON a.pt_id = pt.id
+    JOIN clinics c ON a.clinic_id = c.id
+    LEFT JOIN users creator ON a.created_by = creator.id
+    LEFT JOIN users canceller ON a.cancelled_by = canceller.id
+`;
+
 // Get all appointments (with filters)
 app.get('/api/appointments', authenticateToken, async (req, res) => {
     try {
@@ -1675,15 +1714,7 @@ app.post('/api/appointments', authenticateToken, async (req, res) => {
 
         // Get created appointment details
         const [appointments] = await db.execute(
-            `SELECT a.*,
-                    p.hn, CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                    CONCAT(pt.first_name, ' ', pt.last_name) as pt_name,
-                    c.name as clinic_name
-             FROM appointments a
-             JOIN patients p ON a.patient_id = p.id
-             JOIN users pt ON a.pt_id = pt.id
-             JOIN clinics c ON a.clinic_id = c.id
-             WHERE a.id = ?`,
+            `${appointmentSelectClause} WHERE a.id = ?`,
             [result.insertId]
         );
 
@@ -1790,15 +1821,7 @@ app.put('/api/appointments/:id', authenticateToken, async (req, res) => {
 
         // Get updated appointment
         const [updated] = await db.execute(
-            `SELECT a.*,
-                    p.hn, CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                    CONCAT(pt.first_name, ' ', pt.last_name) as pt_name,
-                    c.name as clinic_name
-             FROM appointments a
-             JOIN patients p ON a.patient_id = p.id
-             JOIN users pt ON a.pt_id = pt.id
-             JOIN clinics c ON a.clinic_id = c.id
-             WHERE a.id = ?`,
+            `${appointmentSelectClause} WHERE a.id = ?`,
             [id]
         );
 

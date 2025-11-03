@@ -132,6 +132,42 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `appointments`
+--
+
+CREATE TABLE `appointments` (
+  `id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `pt_id` int(11) DEFAULT NULL,
+  `clinic_id` int(11) NOT NULL,
+  `appointment_date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `status` enum('SCHEDULED','COMPLETED','CANCELLED','NO_SHOW') NOT NULL DEFAULT 'SCHEDULED',
+  `appointment_type` varchar(100) DEFAULT NULL,
+  `reason` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  `cancellation_reason` text DEFAULT NULL,
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `cancelled_by` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `appointments`
+--
+
+INSERT INTO `appointments` (`id`, `patient_id`, `pt_id`, `clinic_id`, `appointment_date`, `start_time`, `end_time`, `status`, `appointment_type`, `reason`, `notes`, `created_by`, `created_at`, `updated_at`, `cancellation_reason`, `cancelled_at`, `cancelled_by`) VALUES
+(1, 1, 4, 1, '2025-11-03', '10:00:00', '10:45:00', 'SCHEDULED', 'Initial Assessment', 'Shoulder evaluation and plan discussion', 'Bring prior imaging results.', 1, '2025-11-02 09:00:00', NULL, NULL, NULL, NULL),
+(2, 2, 5, 3, '2025-11-04', '09:00:00', '10:00:00', 'COMPLETED', 'Treatment Session', 'Neck pain follow up', 'Manual therapy and HEP review.', 4, '2025-11-01 12:00:00', '2025-11-04 10:30:00', NULL, NULL, NULL),
+(3, 3, 4, 2, '2025-11-05', '14:00:00', '14:45:00', 'CANCELLED', 'Follow-up', 'Re-assessment request', 'Patient will reschedule after travel.', 5, '2025-11-02 08:10:00', '2025-11-03 11:15:00', 'Patient travelling overseas', '2025-11-03 11:15:00', 1),
+(4, 1, 5, 1, '2025-11-07', '16:00:00', '16:45:00', 'NO_SHOW', 'Treatment Session', 'Progress check', 'Marked as no-show after 15 minutes.', 4, '2025-11-05 07:30:00', '2025-11-07 17:15:00', 'Patient did not arrive', '2025-11-07 17:15:00', 4);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `pn_cases`
 --
 
@@ -326,6 +362,17 @@ ALTER TABLE `patients`
   ADD KEY `idx_patient_clinic` (`clinic_id`);
 
 --
+-- Indexes for table `appointments`
+--
+ALTER TABLE `appointments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_appointments_patient` (`patient_id`),
+  ADD KEY `idx_appointments_pt` (`pt_id`),
+  ADD KEY `idx_appointments_clinic` (`clinic_id`),
+  ADD KEY `idx_appointments_date` (`appointment_date`),
+  ADD KEY `idx_appointments_status` (`status`);
+
+--
 -- Indexes for table `pn_cases`
 --
 ALTER TABLE `pn_cases`
@@ -401,6 +448,12 @@ ALTER TABLE `patients`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `appointments`
+--
+ALTER TABLE `appointments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `pn_cases`
 --
 ALTER TABLE `pn_cases`
@@ -440,6 +493,16 @@ ALTER TABLE `user_clinic_grants`
 ALTER TABLE `patients`
   ADD CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`clinic_id`) REFERENCES `clinics` (`id`),
   ADD CONSTRAINT `patients_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `appointments`
+--
+ALTER TABLE `appointments`
+  ADD CONSTRAINT `appointments_patient_fk` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `appointments_pt_fk` FOREIGN KEY (`pt_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `appointments_clinic_fk` FOREIGN KEY (`clinic_id`) REFERENCES `clinics` (`id`),
+  ADD CONSTRAINT `appointments_created_by_fk` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `appointments_cancelled_by_fk` FOREIGN KEY (`cancelled_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `pn_cases`

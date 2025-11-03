@@ -4,333 +4,227 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Appointments - RehabPlus System</title>
-
-    <!-- BRAND -->
     <link rel="icon" href="/public/images/Fav.png" type="image/x-icon">
-
-    <!-- CSS Libraries -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
-
     <style>
-        /* Global Sidebar Styles */
+        body {
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
         .sidebar {
             min-height: 100vh;
             background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08);
         }
+
         .sidebar .nav-link {
-            color: rgba(255,255,255,0.85);
+            color: rgba(255, 255, 255, 0.85);
             padding: 0.75rem 1rem;
             margin: 0.25rem 1rem;
             border-radius: 0.5rem;
             transition: all 0.3s ease;
             font-weight: 500;
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: rgba(255,255,255,0.25);
-            color: white;
-            transform: translateX(5px);
-        }
-        .sidebar .nav-link i {
-            width: 20px;
-            text-align: center;
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255, 255, 255, 0.25);
+            color: #fff;
         }
 
-        /* Main Content */
-        body {
-            /* UI FIX: Changed background to a lighter, cleaner color */
-            background: #f4f7fd;
-            min-height: 100vh;
-        }
-
-        /* UI FIX: Removed background-color from main to let the body background show through */
         main {
             min-height: 100vh;
+            padding-bottom: 4rem;
         }
 
-        /* Page Header */
         .page-header {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(82, 95, 225, 0.12);
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .page-header p {
+            color: #6c6f93;
+        }
+
+        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            border-radius: 0 0 20px 20px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
         }
 
-        /* Filter Section */
-        .filter-section {
-            background: white;
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+        }
+
+        .stat-card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
             padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 2rem;
+            height: 100%;
         }
 
-        .filter-section .form-label {
+        .stat-card h3 {
+            margin: 0;
+            font-weight: 700;
+            color: #2d2f44;
+        }
+
+        .stat-card small {
+            color: #6c6f93;
+            font-weight: 500;
+        }
+
+        .filters-card,
+        .calendar-card,
+        .upcoming-card {
+            border: none;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .filters-card .card-header,
+        .upcoming-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.15);
             font-weight: 600;
-            color: #495057;
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
+            color: #2d2f44;
         }
 
-        .filter-section h5 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        /* Calendar Styles */
         #calendar {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 1rem;
         }
 
-        /* FullCalendar Customization */
         .fc {
             border: none;
         }
 
         .fc-toolbar-title {
-            font-size: 1.25rem !important;
-            font-weight: 700 !important;
-            color: #667eea !important;
+            font-weight: 700;
+            color: #2d2f44 !important;
         }
 
         .fc-button {
             background: #667eea !important;
-            border-color: #667eea !important;
-            font-weight: 600 !important;
-            padding: 0.5rem 1rem !important;
-            border-radius: 8px !important;
+            border: none !important;
+            border-radius: 0.5rem !important;
+            font-weight: 600;
         }
 
         .fc-button:hover {
-            background: #5568d3 !important;
-            border-color: #5568d3 !important;
-        }
-
-        .fc-button-active {
-            background: #764ba2 !important;
-            border-color: #764ba2 !important;
+            background: #5566d6 !important;
         }
 
         .fc-event {
-            cursor: pointer;
-            border-radius: 6px;
             border: none;
-            padding: 2px 5px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .fc-event:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .fc-daygrid-day-number {
+            border-radius: 0.75rem;
             font-weight: 600;
-            color: #495057;
+            padding: 0.25rem 0.5rem;
         }
 
-        .fc-col-header-cell {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white !important;
-            font-weight: 600;
-            padding: 12px 0;
-        }
-
-        .fc-day-today {
-            background: rgba(102, 126, 234, 0.1) !important;
-        }
-
-        /* Appointment Status Colors */
-        .appointment-status-SCHEDULED {
-            background-color: #0d6efd !important;
-            border-color: #0d6efd !important;
-        }
-        .appointment-status-COMPLETED {
-            background-color: #198754 !important;
-            border-color: #198754 !important;
-        }
-        .appointment-status-CANCELLED {
-            background-color: #6c757d !important;
-            border-color: #6c757d !important;
-        }
-        .appointment-status-NO_SHOW {
-            background-color: #dc3545 !important;
-            border-color: #dc3545 !important;
-        }
-
-        /* Modal Enhancements */
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px 15px 0 0;
-        }
-
-        .modal-header .modal-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .modal-content {
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-        }
-
-        .modal-body {
-            padding: 2rem;
-        }
-
-        .modal-body .form-label {
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .modal-body h6 {
-            font-size: 0.95rem;
-        }
-
-        /* Patient Search Results */
-        .patient-search-result {
-            cursor: pointer;
-            padding: 12px;
-            border-bottom: 1px solid #dee2e6;
-            transition: all 0.2s;
-            border-radius: 8px;
-            margin-bottom: 5px;
-        }
-
-        .patient-search-result:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            transform: translateX(5px);
-        }
-
-        /* Conflict Warning */
-        .conflict-warning {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            display: none;
-            animation: shake 0.5s;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
-        }
-
-        /* Time Slot Buttons */
-        .time-slot-btn {
-            margin: 5px;
-            border-radius: 20px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .time-slot-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
-
-        /* Legend Section */
         .legend {
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 1rem;
             flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .legend-item {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 15px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            gap: 0.5rem;
+            background: rgba(102, 126, 234, 0.08);
+            color: #2d2f44;
+            padding: 0.5rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 500;
         }
 
-        .legend-color {
-            width: 20px;
-            height: 20px;
+        .legend-dot {
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
         }
 
-        /* Buttons */
-        .btn-primary {
+        .appointment-status-SCHEDULED { background-color: #0d6efd !important; }
+        .appointment-status-COMPLETED { background-color: #198754 !important; }
+        .appointment-status-CANCELLED { background-color: #6c757d !important; }
+        .appointment-status-NO_SHOW { background-color: #dc3545 !important; }
+
+        .modal-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .modal-content {
             border: none;
-            font-weight: 600;
-            padding: 0.5rem 1.5rem;
-            border-radius: 10px;
-            transition: all 0.3s;
+            border-radius: 1.25rem;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .patient-search-result {
+            cursor: pointer;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
         }
 
-        /* Quick Stats */
-        .quick-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+        .patient-search-result:hover {
+            background: rgba(102, 126, 234, 0.1);
         }
 
-        .stat-card {
-            flex: 1;
-            background: white;
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            text-align: center;
-            transition: all 0.3s;
+        .conflict-warning {
+            border-radius: 0.75rem;
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.35);
+            color: #856404;
+            padding: 0.75rem 1rem;
+            display: none;
         }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        .time-slot-btn {
+            border-radius: 999px;
         }
 
-        .stat-card h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.08);
         }
 
-        .stat-card p {
-            color: #6c757d;
-            margin: 0;
-            font-weight: 500;
-            font-size: 0.875rem;
+        .list-group-item:last-child {
+            border-bottom: none;
         }
 
-        .stat-card.today { border-left: 4px solid #0d6efd; }
-        .stat-card.week { border-left: 4px solid #198754; }
-        .stat-card.month { border-left: 4px solid #ffc107; }
+        .upcoming-card .list-group-item {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .upcoming-card .list-group-item:hover {
+            background-color: rgba(102, 126, 234, 0.08);
+        }
     </style>
 </head>
 <body>
     <% const canManageAppointments = (user.role === 'ADMIN' || user.role === 'PT'); %>
     <div class="container-fluid">
         <div class="row">
-            <!-- Global Sidebar -->
             <%- include('partials/sidebar') %>
 
-            <!-- Main Content -->
-            <!-- UI FIX: Added py-4 for top/bottom padding -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
 
                 <!-- Page Header -->
@@ -350,271 +244,234 @@
                             </button>
                         <% } %>
                     </div>
+                    <% if (canManageAppointments) { %>
+                        <button type="button" class="btn btn-primary" onclick="showBookingModal()">
+                            <i class="bi bi-plus-circle me-2"></i>New Appointment
+                        </button>
+                    <% } %>
                 </div>
 
-                <!-- Quick Stats -->
-                <div class="quick-stats">
-                    <div class="stat-card today">
-                        <h3 id="todayCount">0</h3>
-                        <p><i class="bi bi-calendar-day"></i> Today</p>
+                <% if (!canManageAppointments) { %>
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="bi bi-eye me-2"></i>
+                        <div>Clinic accounts have read-only access. You can review appointments for patients linked to your clinic.</div>
                     </div>
-                    <div class="stat-card week">
-                        <h3 id="weekCount">0</h3>
-                        <p><i class="bi bi-calendar-week"></i> This Week</p>
-                    </div>
-                    <div class="stat-card month">
-                        <h3 id="monthCount">0</h3>
-                        <p><i class="bi bi-calendar-month"></i> This Month</p>
-                    </div>
-                </div>
+                <% } %>
 
-                <!-- Filter Section -->
-                <div class="filter-section">
-                    <h5 class="mb-3"><i class="bi bi-funnel"></i> Filters</h5>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label class="form-label">
-                                <i class="bi bi-person-badge"></i> Filter by PT
-                            </label>
-                            <select class="form-select" id="filterPT">
-                                <option value="">All PTs</option>
-                            </select>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card bg-white">
+                            <small class="text-uppercase d-block mb-2">Today</small>
+                            <h3 id="todayCount">0</h3>
+                            <small><i class="bi bi-calendar-day me-1"></i>Appointments scheduled</small>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">
-                                <i class="bi bi-building"></i> Filter by Clinic
-                            </label>
-                            <select class="form-select" id="filterClinic">
-                                <option value="">All Clinics</option>
-                            </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card bg-white">
+                            <small class="text-uppercase d-block mb-2">This week</small>
+                            <h3 id="weekCount">0</h3>
+                            <small><i class="bi bi-calendar-week me-1"></i>Total active bookings</small>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">
-                                <i class="bi bi-flag"></i> Filter by Status
-                            </label>
-                            <select class="form-select" id="filterStatus">
-                                <option value="">All Statuses</option>
-                                <option value="SCHEDULED">Scheduled</option>
-                                <option value="COMPLETED">Completed</option>
-                                <option value="CANCELLED">Cancelled</option>
-                                <option value="NO_SHOW">No Show</option>
-                            </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card bg-white">
+                            <small class="text-uppercase d-block mb-2">This month</small>
+                            <h3 id="monthCount">0</h3>
+                            <small><i class="bi bi-calendar-month me-1"></i>Sessions on the calendar</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- Calendar -->
-                <div id="calendar"></div>
+                <div class="card filters-card mb-4">
+                    <div class="card-header">
+                        <i class="bi bi-funnel me-2 text-primary"></i>Filter appointments
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="filterPT" class="form-label">Physical therapist</label>
+                                <select id="filterPT" class="form-select">
+                                    <option value="">All therapists</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterClinic" class="form-label">Clinic</label>
+                                <select id="filterClinic" class="form-select">
+                                    <option value="">All clinics</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="filterStatus" class="form-label">Status</label>
+                                <select id="filterStatus" class="form-select">
+                                    <option value="">All statuses</option>
+                                    <option value="SCHEDULED">Scheduled</option>
+                                    <option value="COMPLETED">Completed</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                    <option value="NO_SHOW">No show</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <!-- Legend -->
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #0d6efd;"></div>
-                        <span>Scheduled</span>
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card calendar-card mb-4">
+                            <div class="card-body">
+                                <div id="calendar"></div>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <div class="legend">
+                                    <div class="legend-item"><span class="legend-dot" style="background:#0d6efd"></span>Scheduled</div>
+                                    <div class="legend-item"><span class="legend-dot" style="background:#198754"></span>Completed</div>
+                                    <div class="legend-item"><span class="legend-dot" style="background:#6c757d"></span>Cancelled</div>
+                                    <div class="legend-item"><span class="legend-dot" style="background:#dc3545"></span>No show</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #198754;"></div>
-                        <span>Completed</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #6c757d;"></div>
-                        <span>Cancelled</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background-color: #dc3545;"></div>
-                        <span>No Show</span>
+                    <div class="col-lg-4">
+                        <div class="card upcoming-card h-100">
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <span><i class="bi bi-clock-history me-2 text-primary"></i>Upcoming appointments</span>
+                                <span class="badge rounded-pill text-bg-light" id="upcomingCount">0</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="upcomingAppointments"></ul>
+                                <div id="upcomingEmptyState" class="text-center text-muted py-4">
+                                    <i class="bi bi-calendar-x mb-2 d-block" style="font-size:1.75rem;"></i>
+                                    No upcoming appointments in the next two weeks.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- Booking Modal -->
-    <div class="modal fade" id="bookingModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+    <% if (canManageAppointments) { %>
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-calendar-plus"></i> <span id="modalTitle">New Appointment</span>
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i><span id="modalTitle">New appointment</span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Conflict Warning -->
                     <div class="conflict-warning" id="conflictWarning">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        <strong>Time Conflict Detected!</strong>
-                        <p id="conflictMessage" class="mb-0 mt-2"></p>
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <span id="conflictMessage"></span>
                     </div>
 
                     <form id="appointmentForm">
                         <input type="hidden" id="selectedPatientId">
-
-                        <div class="row">
-                            <!-- Left Column -->
+                        <div class="row g-4">
                             <div class="col-md-6">
-                                <h6 class="text-primary mb-3">
-                                    <i class="bi bi-person-circle"></i> Patient Information
-                                </h6>
-
-                                <!-- Patient Search -->
+                                <h6 class="fw-semibold text-primary mb-3"><i class="bi bi-person-circle me-2"></i>Patient</h6>
                                 <div class="mb-3">
-                                    <label class="form-label">
-                                        Search Patient <span class="text-danger">*</span>
-                                    </label>
+                                    <label for="patientSearch" class="form-label">Search patient <span class="text-danger">*</span></label>
                                     <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="bi bi-search"></i>
-                                        </span>
-                                        <input type="text" class="form-control" id="patientSearch"
-                                               placeholder="HN, PT Number, or Name..." autocomplete="off">
-                                        <button class="btn btn-primary" type="button" onclick="searchPatients()">
-                                            Search
-                                        </button>
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text" class="form-control" id="patientSearch" placeholder="HN, PT number, or name" autocomplete="off">
+                                        <button type="button" class="btn btn-primary" onclick="searchPatients()">Search</button>
                                     </div>
-                                    <div id="patientSearchResults" class="border rounded mt-2 p-2"
-                                         style="display: none; max-height: 250px; overflow-y: auto;">
-                                    </div>
-                                    <div id="selectedPatientInfo" class="alert alert-success mt-2" style="display: none;">
-                                        <i class="bi bi-check-circle"></i>
+                                    <div id="patientSearchResults" class="border rounded-3 mt-2 p-2" style="display:none; max-height:240px; overflow-y:auto;"></div>
+                                    <div id="selectedPatientInfo" class="alert alert-success mt-2" style="display:none;">
+                                        <i class="bi bi-check-circle me-2"></i>
                                         <strong>Selected:</strong> <span id="selectedPatientDisplay"></span>
                                     </div>
                                 </div>
 
-                                <!-- PT Selection -->
                                 <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="bi bi-person-badge"></i> Physical Therapist <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select" id="appointmentPT" required onchange="checkConflicts()">
-                                        <option value="">Select PT...</option>
+                                    <label for="appointmentPT" class="form-label">Physical therapist <span class="text-danger">*</span></label>
+                                    <select id="appointmentPT" class="form-select" onchange="checkConflicts()" required>
+                                        <option value="">Select therapist</option>
                                     </select>
                                 </div>
 
-                                <!-- Clinic Selection -->
                                 <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="bi bi-building"></i> Clinic <span class="text-danger">*</span>
-                                    </label>
-                                    <select class="form-select" id="appointmentClinic" required>
-                                        <option value="">Select Clinic...</option>
+                                    <label for="appointmentClinic" class="form-label">Clinic <span class="text-danger">*</span></label>
+                                    <select id="appointmentClinic" class="form-select" required>
+                                        <option value="">Select clinic</option>
                                     </select>
                                 </div>
                             </div>
-
-                            <!-- Right Column -->
                             <div class="col-md-6">
-                                <h6 class="text-primary mb-3">
-                                    <i class="bi bi-clock"></i> Schedule Details
-                                </h6>
-
-                                <!-- Date -->
+                                <h6 class="fw-semibold text-primary mb-3"><i class="bi bi-clock me-2"></i>Schedule</h6>
                                 <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="bi bi-calendar3"></i> Date <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="date" class="form-control" id="appointmentDate" required onchange="checkConflicts()">
+                                    <label for="appointmentDate" class="form-label">Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="appointmentDate" onchange="checkConflicts()" required>
                                 </div>
-
-                                <div class="row">
-                                    <!-- Start Time -->
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Start Time <span class="text-danger">*</span></label>
-                                        <input type="time" class="form-control" id="appointmentStartTime" required onchange="checkConflicts()">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="appointmentStartTime" class="form-label">Start time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="appointmentStartTime" onchange="checkConflicts()" required>
                                     </div>
-
-                                    <!-- End Time -->
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">End Time <span class="text-danger">*</span></label>
-                                        <input type="time" class="form-control" id="appointmentEndTime" required onchange="checkConflicts()">
+                                    <div class="col-md-6">
+                                        <label for="appointmentEndTime" class="form-label">End time <span class="text-danger">*</span></label>
+                                        <input type="time" class="form-control" id="appointmentEndTime" onchange="checkConflicts()" required>
                                     </div>
                                 </div>
-
-                                <!-- Quick Duration -->
-                                <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="bi bi-lightning"></i> Quick Duration
-                                    </label>
-                                    <div>
-                                        <button type="button" class="btn btn-sm btn-outline-primary time-slot-btn" onclick="setDuration(30)">
-                                            30 min
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary time-slot-btn" onclick="setDuration(60)">
-                                            1 hour
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary time-slot-btn" onclick="setDuration(90)">
-                                            1.5 hours
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary time-slot-btn" onclick="setDuration(120)">
-                                            2 hours
-                                        </button>
+                                <div class="mt-3">
+                                    <small class="text-muted d-block mb-2">Quick duration</small>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm time-slot-btn" onclick="setDuration(30)">30 min</button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm time-slot-btn" onclick="setDuration(45)">45 min</button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm time-slot-btn" onclick="setDuration(60)">1 hour</button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm time-slot-btn" onclick="setDuration(90)">1.5 hours</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <hr>
+                        <hr class="my-4">
 
-                        <!-- Additional Details -->
-                        <h6 class="text-primary mb-3">
-                            <i class="bi bi-card-text"></i> Additional Details
-                        </h6>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Appointment Type</label>
-                                <select class="form-select" id="appointmentType">
-                                    <option value="">Select type...</option>
-                                    <option value="Initial Assessment">Initial Assessment</option>
+                        <h6 class="fw-semibold text-primary mb-3"><i class="bi bi-card-text me-2"></i>Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="appointmentType" class="form-label">Appointment type</label>
+                                <select id="appointmentType" class="form-select">
+                                    <option value="">Select type</option>
+                                    <option value="Initial Assessment">Initial assessment</option>
                                     <option value="Follow-up">Follow-up</option>
-                                    <option value="Treatment Session">Treatment Session</option>
+                                    <option value="Treatment Session">Treatment session</option>
                                     <option value="Re-evaluation">Re-evaluation</option>
                                     <option value="Discharge">Discharge</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <!-- Reason -->
-                        <div class="mb-3">
-                            <label class="form-label">Reason for Visit</label>
-                            <textarea class="form-control" id="appointmentReason" rows="2"
-                                      placeholder="e.g., Back pain treatment, Post-surgery rehabilitation..."></textarea>
-                        </div>
-
-                        <!-- Notes -->
-                        <div class="mb-3">
-                            <label class="form-label">Additional Notes</label>
-                            <textarea class="form-control" id="appointmentNotes" rows="2"
-                                      placeholder="Any special instructions or notes..."></textarea>
+                            <div class="col-md-8">
+                                <label for="appointmentReason" class="form-label">Reason for visit</label>
+                                <textarea id="appointmentReason" class="form-control" rows="2" placeholder="e.g. Post-surgery rehabilitation"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label for="appointmentNotes" class="form-label">Internal notes</label>
+                                <textarea id="appointmentNotes" class="form-control" rows="2" placeholder="Additional context for the therapist"></textarea>
+                            </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Cancel
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-2"></i>Close
                     </button>
-                    <button type="button" class="btn btn-primary btn-lg" onclick="saveAppointment()">
-                        <!-- TYPO FIX: Changed class_models to class -->
-                        <i class="bi bi-check-circle"></i> Save Appointment
+                    <button type="button" class="btn btn-primary" onclick="saveAppointment()">
+                        <i class="bi bi-check-circle me-2"></i>Save appointment
                     </button>
                 </div>
             </div>
         </div>
     </div>
+    <% } %>
 
-    <!-- View Appointment Modal -->
-    <div class="modal fade" id="viewAppointmentModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade" id="viewAppointmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-calendar-event"></i> Appointment Details
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title"><i class="bi bi-calendar-event me-2"></i>Appointment details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="appointmentDetails">
-                    <!-- Details loaded dynamically -->
-                </div>
+                <div class="modal-body" id="appointmentDetails"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Close
@@ -635,22 +492,16 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script>
-        // Store user info for JavaScript
-        // SYNTAX ERROR FIX: Used JSON.stringify to safely inject EJS variables into the JS object.
         window.userInfo = {
             id: <%= user.id %>,
             role: <%- JSON.stringify(user.role) %>,
             email: <%- JSON.stringify(user.email || '') %>
         };
-        console.log('User info loaded:', window.userInfo);
     </script>
-    <!-- CACHE-BUSTING FIX: Added a timestamp to the src to force the browser to re-download the JS file -->
     <script src="/public/js/appointments.js?v=<%= Date.now() %>"></script>
 </body>
 </html>
-
