@@ -247,27 +247,14 @@ async function loadAppointments(fetchInfo, successCallback, failureCallback) {
 
         const rawAppointments = await response.json();
         allAppointments = rawAppointments.map(apt => {
-            const appointmentDate = normalizeDate(apt.appointment_date);
-            const startTime = normalizeTime(apt.start_time);
-            const endTime = normalizeTime(apt.end_time);
-            const startDateTime = buildDateTime(appointmentDate, startTime);
-            const endDateTime = buildDateTime(appointmentDate, endTime);
             const fallbackName = [apt.first_name, apt.last_name].filter(Boolean).join(' ').trim();
             const patientName = (apt.patient_name || fallbackName || 'Unknown patient').trim();
             const ptName = (apt.pt_name || 'Unassigned PT').trim();
 
             return {
                 ...apt,
-                appointment_date: appointmentDate,
-                start_time: startTime,
-                end_time: endTime,
-                start_datetime: startDateTime,
-                end_datetime: endDateTime,
                 patient_name: patientName,
-                pt_name: ptName,
-                clinic_name: apt.clinic_name || 'Unknown clinic',
-                created_by_name: apt.created_by_name || '',
-                cancelled_by_name: apt.cancelled_by_name || ''
+                pt_name: ptName
             };
         });
         // console.log('Appointments loaded:', allAppointments); // DEBUG
@@ -279,9 +266,9 @@ async function loadAppointments(fetchInfo, successCallback, failureCallback) {
         // Convert to FullCalendar events
         const events = allAppointments.map(apt => ({
             id: apt.id,
-            title: `${apt.patient_name} • ${apt.pt_name}`,
-            start: apt.start_datetime,
-            end: apt.end_datetime,
+            title: `${apt.patient_name} (${apt.pt_name})`,
+            start: `${apt.appointment_date}T${apt.start_time}`,
+            end: `${apt.appointment_date}T${apt.end_time}`,
             backgroundColor: getStatusColor(apt.status),
             borderColor: getStatusColor(apt.status),
             classNames: [`appointment-status-${apt.status}`],
@@ -316,13 +303,6 @@ function getStatusColor(status) {
 function showBookingModal() {
     if (!canManageAppointments) {
         showAlert('You do not have permission to create appointments.', 'warning');
-        return;
-    }
-    const modalEl = document.getElementById('bookingModal');
-    const form = document.getElementById('appointmentForm');
-
-    if (!modalEl || !form) {
-        console.error('Booking modal elements are missing from the page.');
         return;
     }
     currentAppointmentId = null;

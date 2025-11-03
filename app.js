@@ -1555,7 +1555,21 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
             return res.json([]);
         }
 
-        let query = `${appointmentSelectClause} WHERE 1=1`;
+        let query = `
+            SELECT
+                a.*,
+                p.hn, p.pt_number, p.first_name, p.last_name, p.gender, p.dob,
+                CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+                CONCAT_WS(' ', pt.first_name, pt.last_name) AS pt_name,
+                c.name AS clinic_name,
+                CONCAT_WS(' ', u.first_name, u.last_name) AS created_by_name
+            FROM appointments a
+            JOIN patients p ON a.patient_id = p.id
+            LEFT JOIN users pt ON a.pt_id = pt.id
+            JOIN clinics c ON a.clinic_id = c.id
+            LEFT JOIN users u ON a.created_by = u.id
+            WHERE 1=1
+        `;
         const params = [];
 
         if (req.user.role !== 'ADMIN' && accessibleClinics.length > 0) {

@@ -226,10 +226,23 @@
             <%- include('partials/sidebar') %>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-                <div class="page-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                    <div>
-                        <h1 class="h3 mb-2"><i class="bi bi-calendar-week me-2 text-primary"></i>Appointments</h1>
-                        <p class="mb-0">Centralised schedule management for physiotherapists and clinics.</p>
+
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h2 mb-2">
+                                <i class="bi bi-calendar-check"></i> Appointment Scheduler
+                            </h1>
+                            <p class="mb-0 opacity-75" style="font-size: 0.95rem;">
+                                <i class="bi bi-calendar3"></i> Manage PT appointments and schedules
+                            </p>
+                        </div>
+                        <% if (canManageAppointments) { %>
+                            <button type="button" class="btn btn-light btn-lg" onclick="showBookingModal()">
+                                <i class="bi bi-plus-circle"></i> New Appointment
+                            </button>
+                        <% } %>
                     </div>
                     <% if (canManageAppointments) { %>
                         <button type="button" class="btn btn-primary" onclick="showBookingModal()">
@@ -460,18 +473,18 @@
                 </div>
                 <div class="modal-body" id="appointmentDetails"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-2"></i>Close
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Close
                     </button>
                     <% if (canManageAppointments) { %>
                         <button type="button" class="btn btn-warning" onclick="rescheduleAppointment()">
-                            <i class="bi bi-calendar2-event me-2"></i>Reschedule
+                            <i class="bi bi-calendar-x"></i> Reschedule
                         </button>
                         <button type="button" class="btn btn-success" onclick="markAsCompleted()">
-                            <i class="bi bi-check2-circle me-2"></i>Mark completed
+                            <i class="bi bi-check-circle"></i> Mark Completed
                         </button>
                         <button type="button" class="btn btn-danger" onclick="cancelAppointment()">
-                            <i class="bi bi-x-octagon me-2"></i>Cancel
+                            <i class="bi bi-x-octagon"></i> Cancel
                         </button>
                     <% } %>
                 </div>
