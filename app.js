@@ -1520,15 +1520,15 @@ app.get('/api/appointments', authenticateToken, async (req, res) => {
             SELECT
                 a.*,
                 p.hn, p.pt_number, p.first_name, p.last_name, p.gender, p.dob,
-                CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                CONCAT(pt.first_name, ' ', pt.last_name) as pt_name,
-                c.name as clinic_name,
-                CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+                CONCAT_WS(' ', p.first_name, p.last_name) AS patient_name,
+                CONCAT_WS(' ', pt.first_name, pt.last_name) AS pt_name,
+                c.name AS clinic_name,
+                CONCAT_WS(' ', u.first_name, u.last_name) AS created_by_name
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
-            JOIN users pt ON a.pt_id = pt.id
+            LEFT JOIN users pt ON a.pt_id = pt.id
             JOIN clinics c ON a.clinic_id = c.id
-            JOIN users u ON a.created_by = u.id
+            LEFT JOIN users u ON a.created_by = u.id
             WHERE 1=1
         `;
         const params = [];
